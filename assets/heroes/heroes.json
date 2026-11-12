@@ -1,0 +1,88 @@
+{
+ "image": "heroes.png",
+ "width": 2048,
+ "height": 1024,
+ "padding": 12,
+ "characters": [
+  {
+   "id": "fox",
+   "rect": [
+    12,
+    12,
+    391,
+    509
+   ],
+   "height": 3.65
+  },
+  {
+   "id": "bunny",
+   "rect": [
+    427,
+    12,
+    340,
+    506
+   ],
+   "height": 3.6
+  },
+  {
+   "id": "frog",
+   "rect": [
+    791,
+    12,
+    355,
+    432
+   ],
+   "height": 3.1
+  },
+  {
+   "id": "axolotl",
+   "rect": [
+    1170,
+    12,
+    429,
+    459
+   ],
+   "height": 3.3
+  },
+  {
+   "id": "duck",
+   "rect": [
+    12,
+    545,
+    388,
+    458
+   ],
+   "height": 3.3
+  },
+  {
+   "id": "kitten",
+   "rect": [
+    424,
+    545,
+    360,
+    458
+   ],
+   "height": 3.2
+  },
+  {
+   "id": "raccoon",
+   "rect": [
+    808,
+    545,
+    367,
+    458
+   ],
+   "height": 3.35
+  },
+  {
+   "id": "mushroom",
+   "rect": [
+    1199,
+    545,
+    413,
+    458
+   ],
+   "height": 3.25
+  }
+ ]
+}
