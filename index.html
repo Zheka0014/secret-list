@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws: wss: https://*.playfabapi.com; media-src 'self' blob:">
+<title>Тайный список — Secret List</title>
+<meta name="description" content="Тайные цели, герои с большими глазами и три минуты мультяшного хаоса на неоновой крыше. Играй с ботами или с друзьями.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#221a3d">
+<meta name="color-scheme" content="dark">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="state-boot">
+<div id="scene" aria-label="3D arena"></div>
+<div class="vignette"></div>
+<div id="labels" aria-hidden="true"></div>
+
+<!-- ============ HUD ============ -->
+<header id="top">
+  <div class="brand"><span class="brand-icon">✕</span><div><span data-i18n="brand.top">ТАЙНЫЙ</span><b data-i18n="brand.bottom">СПИСОК</b></div></div>
+  <div class="match-pill"><span class="live-dot"></span><span id="phase" data-i18n="phase.menu">ГОТОВ К ХАОСУ</span><i></i><span id="modeText"></span></div>
+  <div class="header-actions">
+    <button id="btnSound" class="icon" data-i18n-attr="aria-label:aria.sound;title:aria.sound">♪</button>
+    <button id="btnHelp" class="icon" data-i18n-attr="aria-label:aria.help;title:aria.help">?</button>
+    <button id="btnCamera" class="icon hud-only" aria-pressed="false" data-i18n-attr="aria-label:aria.camera;title:aria.camera">◎</button>
+    <button id="btnPause" class="icon hud-only" data-i18n-attr="aria-label:aria.pause;title:aria.pause">Ⅱ</button>
+  </div>
+</header>
+
+<div id="hud">
+  <aside id="contractCard" class="contract sticker">
+    <div class="eyebrow" data-i18n="contract.eyebrow"></div>
+    <div class="contract-title"><span data-i18n="contract.title"></span> <span>↗</span></div>
+    <div class="portrait" id="portrait"><canvas id="portraitCanvas" width="256" height="200"></canvas><span class="portrait-symbol" id="targetSymbol">?</span><div class="classified" data-i18n="contract.classified"></div></div>
+    <div class="target-name" id="targetName"></div>
+    <div class="target-desc" id="targetDesc"></div>
+    <div class="contract-bottom"><span data-i18n="contract.reward"></span><strong data-i18n="contract.rewardValue"></strong></div>
+  </aside>
+  <aside class="scoreboard sticker" id="scoreboard">
+    <div class="panel-heading"><span data-i18n="scores.title"></span> <span>★</span></div>
+    <div id="scores"></div>
+    <div class="score-foot" data-i18n="scores.foot"></div>
+  </aside>
+  <div class="timer sticker"><span data-i18n="timer.label"></span><strong id="time">03:00</strong><div class="timer-track"><div id="timebar"></div></div></div>
+  <div class="location"><span data-i18n="location.arena"></span><strong data-i18n="location.name"></strong><small>NEON ROOFTOP</small></div>
+  <div class="feed" id="feed" aria-live="polite"></div>
+  <div class="bottom-left"><div class="mini sticker"><canvas id="minimap" width="212" height="180"></canvas><span><span data-i18n="minimap.you"></span> <b>●</b> <i><span data-i18n="minimap.target"></span> <em>●</em></i></span></div></div>
+  <footer id="bottom">
+    <div class="controls" id="controlsHint">
+      <span><kbd>W A S D</kbd> <span data-i18n="ctl.move"></span></span>
+      <span><kbd>SPACE</kbd> <span data-i18n="ctl.push"></span></span>
+      <span><kbd>E</kbd> <span data-i18n="ctl.trap"></span></span>
+      <span><kbd>Q</kbd> <span data-i18n="ctl.mask"></span></span>
+      <span><kbd>SHIFT</kbd> <span data-i18n="ctl.dash"></span></span>
+      <span><kbd data-i18n="ctl.mouse"></kbd> <span data-i18n="ctl.camera"></span></span>
+    </div>
+    <div class="abilities">
+      <button id="abPush" class="ability yellow" tabindex="-1"><span class="ab-icon">✦</span><div><span data-i18n="ability.push"></span><small id="abPushCD"></small></div><i class="cd"></i></button>
+      <button id="abTrap" class="ability" tabindex="-1"><span class="ab-icon">⌘</span><div><span data-i18n="ability.trap"></span><small id="abTrapCD"></small></div><i class="cd"></i></button>
+      <button id="abMask" class="ability" tabindex="-1"><span class="ab-icon">◈</span><div><span data-i18n="ability.mask"></span><small id="abMaskCD"></small></div><i class="cd"></i></button>
+      <button id="abDash" class="ability" tabindex="-1"><span class="ab-icon">ϟ</span><div><span data-i18n="ability.dash"></span><small id="abDashCD"></small></div><i class="cd"></i></button>
+    </div>
+  </footer>
+  <div id="touch"><div class="dpad"><button data-key="w" aria-label="↑" tabindex="-1">↑</button><button data-key="a" aria-label="←" tabindex="-1">←</button><button data-key="s" aria-label="↓" tabindex="-1">↓</button><button data-key="d" aria-label="→" tabindex="-1">→</button></div></div>
+  <div id="maskStatus" hidden role="status"></div>
+  <div id="nearTrap" hidden></div>
+  <div id="spectateBanner" hidden data-i18n="spectate"></div>
+  <div id="orderPop" hidden role="status"><small data-i18n="order.kicker"></small><strong data-i18n="order.title"></strong><b>+1 ★</b><span id="orderNext"></span></div>
+  <div id="countdown" hidden></div>
+  <div id="respawnOverlay" hidden><strong id="respawnNum">5</strong></div>
+</div>
+<div id="toast" role="status"></div>
+<div id="fps" hidden></div>
+
+<!-- ============ SCREENS ============ -->
+<section id="screen-loading" class="screen active">
+  <div class="loader"><span class="brand-icon big">✕</span><p data-i18n="loading">Загрузка крыши…</p><div class="bar"><i id="loadBar"></i></div></div>
+</section>
+
+<section id="screen-menu" class="screen side">
+  <div class="panel-body">
+    <span class="kicker" data-i18n="menu.kicker"></span>
+    <h1 class="title" data-i18n-html="menu.title"></h1>
+    <p class="lead" data-i18n-html="menu.body"></p>
+    <div class="hero-pick"><span class="label" data-i18n="menu.hero"></span><div class="hero-row" id="menuHeroes"></div><div class="hero-caption" id="menuHeroCaption"></div></div>
+    <div class="menu-buttons">
+      <button class="primary" id="btnSolo"><span data-i18n="menu.solo"></span><span>→</span></button>
+      <button class="secondary" id="btnOnline"><span data-i18n="menu.online"></span><span>⇄</span></button>
+      <div class="menu-row">
+        <button class="ghost" id="btnSettings" data-i18n="menu.settings"></button>
+        <button class="ghost" id="btnRules" data-i18n="menu.rules"></button>
+        <button class="ghost" id="btnQuit" data-i18n="menu.quit" hidden></button>
+      </div>
+    </div>
+    <p class="note" data-i18n="menu.note"></p>
+  </div>
+</section>
+
+<section id="screen-online" class="screen center">
+  <div class="card">
+    <span class="kicker" data-i18n="online.kicker"></span>
+    <h2 data-i18n-html="online.title"></h2>
+    <label class="field"><span data-i18n="online.name"></span><input id="nameInput" maxlength="18" autocomplete="off" spellcheck="false"></label>
+    <div class="online-grid">
+      <div class="online-box" id="boxSteam">
+        <h3><span class="steam-dot"></span><span data-i18n="online.steam"></span></h3>
+        <p class="hint" id="steamStatus"></p>
+        <button class="primary" id="btnSteamHost"><span data-i18n="online.steamCreate"></span><span>→</span></button>
+        <p class="hint" data-i18n="online.steamHint"></p>
+      </div>
+      <div class="online-box" id="boxLan">
+        <h3 data-i18n="online.lan"></h3>
+        <button class="secondary" id="btnLanHost"><span data-i18n="online.lanCreate"></span><span>⌂</span></button>
+        <div class="join-row"><label class="field"><span id="joinLabel" data-i18n="online.address"></span><input id="joinInput" autocomplete="off" spellcheck="false"></label><button class="secondary" id="btnJoin" data-i18n="online.join"></button></div>
+        <p class="hint" id="lanHint"></p>
+      </div>
+    </div>
+    <p class="hint center-text" id="onlineUnavailable" hidden data-i18n="online.unavailable"></p>
+    <p class="hint center-text" id="onlineBusy" hidden data-i18n="online.busy"></p>
+    <button class="ghost back" id="btnOnlineBack" data-i18n="online.back"></button>
+  </div>
+</section>
+
+<section id="screen-lobby" class="screen center">
+  <div class="card wide">
+    <div class="lobby-head"><div><span class="kicker" id="lobbyKind"></span><h2 data-i18n="lobby.title"></h2><p class="hint" id="lobbySub"></p></div><button class="ghost small" id="btnCopy" hidden data-i18n="lobby.copy"></button></div>
+    <div class="lobby-grid">
+      <div><h3 data-i18n="lobby.players"></h3><ol class="slots" id="lobbySlots"></ol></div>
+      <div>
+        <h3 data-i18n="lobby.hero"></h3><div class="hero-row compact" id="lobbyHeroes"></div>
+        <div id="lobbySettings"><h3 data-i18n="lobby.settings"></h3>
+          <div class="setting"><span data-i18n="lobby.duration"></span><div class="seg" id="durationSeg"></div></div>
+          <div class="setting"><span data-i18n="lobby.bots"></span><button class="toggle" id="botsToggle" aria-pressed="true"></button></div>
+        </div>
+      </div>
+    </div>
+    <p class="hint warn" id="lobbyWarn" hidden data-i18n="lobby.needPlayers"></p>
+    <div class="lobby-actions">
+      <button class="ghost" id="btnLobbyLeave" data-i18n="lobby.leave"></button>
+      <button class="secondary" id="btnInvite" hidden><span data-i18n="lobby.invite"></span><span>✉</span></button>
+      <button class="primary" id="btnLobbyStart"><span id="lobbyStartText" data-i18n="lobby.start"></span><span>→</span></button>
+    </div>
+  </div>
+</section>
+
+<section id="screen-settings" class="screen center">
+  <div class="card">
+    <h2 data-i18n="settings.title"></h2>
+    <div class="settings-list">
+      <div class="setting"><span data-i18n="settings.language"></span><div class="seg" id="langSeg"></div></div>
+      <div class="setting"><span data-i18n="settings.volume"></span><input type="range" min="0" max="100" id="volMaster"></div>
+      <div class="setting"><span data-i18n="settings.music"></span><input type="range" min="0" max="100" id="volMusic"></div>
+      <div class="setting"><span data-i18n="settings.sfx"></span><input type="range" min="0" max="100" id="volSfx"></div>
+      <div class="setting"><span data-i18n="settings.quality"></span><div class="seg" id="qualitySeg"></div></div>
+      <div class="setting"><span data-i18n="settings.dynamic"></span><button class="toggle" id="dynToggle"></button></div>
+      <div class="setting" id="fullscreenRow"><span data-i18n="settings.fullscreen"></span><button class="toggle" id="fsToggle"></button></div>
+      <div class="setting"><span data-i18n="settings.shake"></span><button class="toggle" id="shakeToggle"></button></div>
+      <div class="setting"><span data-i18n="settings.fps"></span><button class="toggle" id="fpsToggle"></button></div>
+      <div class="setting" id="privacyRow"><span data-i18n="settings.privacy"></span><a class="ghost small" id="privacyLink" href="privacy.html" target="_blank" rel="noopener" data-i18n="settings.privacyOpen"></a></div>
+    </div>
+    <button class="primary" id="btnSettingsBack"><span data-i18n="settings.back"></span><span>✓</span></button>
+  </div>
+</section>
+
+<dialog id="modal"><div class="modal-inner">
+  <span class="kicker" id="modalKicker"></span>
+  <h1 id="modalTitle"></h1>
+  <div id="modalBody"></div>
+  <div class="modal-buttons" id="modalButtons"></div>
+  <p class="note" id="modalNote"></p>
+</div></dialog>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
