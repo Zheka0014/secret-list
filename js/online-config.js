@@ -3,7 +3,7 @@
 //
 // PLAYFAB_TITLE_ID: PlayFab Game Manager → your game → ⚙ Title settings → Title ID
 // (4–6 letters and digits, e.g. "1A2B3"). Empty = online play hidden.
-export const PLAYFAB_TITLE_ID = '';
+export const PLAYFAB_TITLE_ID = '1415A8';
 
 // Public STUN servers only tell each player its own public address so the
 // browsers can connect directly; no game data passes through them.
