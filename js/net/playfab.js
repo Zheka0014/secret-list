@@ -115,12 +115,12 @@ function waitGathering(pc, ms = 2500) {
 
 // ---- transport ---------------------------------------------------------------------
 export class PlayFabTransport extends Emitter {
-  constructor({ titleId, base = null, iceServers = [], name = '', maxPlayers = 8, api = null, RTC = globalThis.RTCPeerConnection, joinTimeout = 25000, pollMs = 1200 } = {}) {
+  constructor({ titleId, base = null, iceServers = [], name = '', maxPlayers = 8, api = null, RTC = globalThis.RTCPeerConnection, joinTimeout = 25000, pollMs = 1200, findAttempts = 4, findDelayMs = 900 } = {}) {
     super();
     if (!RTC) throw fail('webrtc');
     this.api = api || new PlayFabApi(titleId, { base });
     this.kind = 'playfab'; this.iceServers = iceServers; this.name = name; this.maxPlayers = maxPlayers;
-    this.RTC = RTC; this.joinTimeout = joinTimeout; this.pollMs = pollMs;
+    this.RTC = RTC; this.joinTimeout = joinTimeout; this.pollMs = pollMs; this.findAttempts = findAttempts; this.findDelayMs = findDelayMs;
     this.peers = new Set(); this.links = new Map(); this.closed = false; this.timers = [];
   }
   _pc() { return new this.RTC({ iceServers: this.iceServers }); }
@@ -166,9 +166,9 @@ export class PlayFabTransport extends Emitter {
   async _dropOldLobbies() {
     // A crashed session can leave our old lobby behind; PlayFab limits how many
     // lobbies a player may own, so clean up first.
+    // Players cannot delete lobbies (only title servers can); a lobby disappears
+    // once its last member leaves, so leaving is enough.
     const api = this.api;
-    const mine = await api.lobby('FindLobbies', { Filter: "lobby/amOwner eq 'true'", Pagination: { PageSizeRequested: 10 } }).catch(() => null);
-    for (const l of mine?.Lobbies || []) await api.lobby('DeleteLobby', { LobbyId: l.LobbyId }).catch(() => {});
     const member = await api.lobby('FindLobbies', { Filter: "lobby/amMember eq 'true'", Pagination: { PageSizeRequested: 10 } }).catch(() => null);
     for (const l of member?.Lobbies || []) await api.lobby('LeaveLobby', { LobbyId: l.LobbyId, MemberEntity: api.entity }).catch(() => {});
   }
@@ -248,7 +248,14 @@ export class PlayFabTransport extends Emitter {
     if (!code) throw fail('noRoom');
     await api.login();
     this.role = 'client'; this.selfId = 'pf:' + api.entity.Id; this.room = code;
-    const found = await api.lobby('FindLobbies', { Filter: `string_key1 eq '${code}'`, Pagination: { PageSizeRequested: 5 } });
+    // Lobby search is indexed with a short delay (about a second on PlayFab), so a
+    // room created a moment ago may need another look.
+    let found = { Lobbies: [] };
+    for (let attempt = 0; attempt < this.findAttempts; attempt++) {
+      if (attempt) await sleep(this.findDelayMs);
+      found = await api.lobby('FindLobbies', { Filter: `string_key1 eq '${code}'`, Pagination: { PageSizeRequested: 5 } });
+      if (found.Lobbies?.length) break;
+    }
     const lobby = (found.Lobbies || []).find(l => l.MembershipLock !== 'Locked' && l.CurrentPlayers < l.MaxPlayers) || null;
     if (!lobby) throw fail((found.Lobbies || []).length ? 'full' : 'noRoom');
     this.hostId = 'pf:' + lobby.Owner.Id;
@@ -300,6 +307,6 @@ export class PlayFabTransport extends Emitter {
     if (this.closed) return;
     this.closed = true;
     for (const l of this.links.values()) { l.gone = true; clearTimeout(l.timer); try { l.pc.close(); } catch { /* ignore */ } }
-    if (this.role === 'host' && this.lobbyId) this.api.lobby('DeleteLobby', { LobbyId: this.lobbyId }).catch(() => {});
+    if (this.role === 'host' && this.lobbyId) this.api.lobby('LeaveLobby', { LobbyId: this.lobbyId, MemberEntity: this.api.entity }).catch(() => {});
   }
 }
