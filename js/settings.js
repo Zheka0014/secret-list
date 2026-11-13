@@ -1,5 +1,5 @@
 const KEY = 'secret-list.settings.v1';
-const DEFAULTS = { lang: null, volMaster: 80, volMusic: 45, volSfx: 90, quality: null, dynamic: true, fullscreen: true, shake: true, fps: false, name: '', hero: 0, duration: 180, bots: true, lastAddress: '' };
+const DEFAULTS = { lang: null, volMaster: 80, volMusic: 45, volSfx: 90, quality: null, dynamic: true, fullscreen: true, shake: true, fps: false, name: '', hero: 0, duration: 180, bots: true, lastAddress: '', tv: null };
 
 export function loadSettings() {
   let saved = {};

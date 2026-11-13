@@ -25,8 +25,9 @@ export function detectEdition({ desktop = false, referrer = '', ua = '', install
   if (desktop) return 'full';
   // Edge sends this referrer when the Store app is first started from the Store.
   const fromStore = String(referrer).startsWith('app-info://platform/microsoft-store');
-  // The Store app always runs as an installed Edge web app on Windows.
-  const storeApp = installed && /Windows/.test(ua) && /\bEdg\//.test(ua);
+  // The Store app always runs as an installed Edge web app on Windows PCs
+  // (Edge on Xbox also says "Windows", but the Store app is not on Xbox).
+  const storeApp = installed && /Windows/.test(ua) && /\bEdg\//.test(ua) && !/\bXbox\b/i.test(ua);
   if (fromStore || storeApp) { write(storage, FLAG_KEY, 'store'); return 'full'; }
   return read(storage, FLAG_KEY) === 'store' ? 'full' : 'demo';
 }

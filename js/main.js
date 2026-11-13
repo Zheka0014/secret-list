@@ -19,6 +19,7 @@ import * as platform from './platform.js';
 import { createMatch, BTN } from './sim.js';
 import { createTracker, progressUnlocks } from './achievements.js';
 import { detectEdition, installedDisplayMode, demoStatus, useDemoMatch, DEMO_DURATION, STORE_URL } from './edition.js';
+import { detectXbox, tvScale, xboxQuality, guardBackButton } from './tv.js';
 
 const params = new URLSearchParams(location.search);
 const settings = loadSettings();
@@ -27,6 +28,8 @@ const audio = createAudio();
 let stage, hud, labels, input, screens, steam = { available: false };
 let session = null, sessionInfo = {}, mode = 'boot', menuView = null, lastLobby = null, testMove = null, edition = 'full';
 const storage = (() => { try { return window.localStorage; } catch { return null; } })();
+// Edge on Xbox (or ?tv=xbox to try it on a PC): big-screen interface and controller hints.
+const xbox = detectXbox(navigator.userAgent) || (params.get('tv') === 'xbox' ? 'xbox-series' : null);
 const achievements = createTracker();
 // Stat updates go to Steam; progress achievements unlock from the new totals.
 async function commitStats(ops) {
@@ -42,8 +45,11 @@ function fatal(text) {
 async function boot() {
   steam = await platform.steamStatus();
   const lang = params.get('lang') || settings.lang || detectLanguage(steam.available ? steam.language : null);
+  if (xbox) $('demoBanner').dataset.i18n = 'demo.bannerXbox';
   setLang(lang); applyI18n();
-  if (!settings.quality) settings.quality = params.get('quality') || (steam.deck ? 'medium' : matchMedia('(pointer: coarse)').matches ? 'medium' : 'high');
+  if (!settings.quality) settings.quality = params.get('quality') || (xbox ? xboxQuality(xbox) : steam.deck ? 'medium' : matchMedia('(pointer: coarse)').matches ? 'medium' : 'high');
+  applyTv();
+  addEventListener('resize', applyTv);
   audio.setVolumes({ master: settings.volMaster / 100, music: settings.volMusic / 100, sfx: settings.volSfx / 100 });
   document.body.classList.toggle('touch', matchMedia('(pointer: coarse)').matches);
   document.body.classList.toggle('deck', !!steam.deck);
@@ -75,7 +81,7 @@ async function boot() {
   input = createInput({ canvas: stage.canvas, handlers: {
     back: onBack, navigate: dir => screens.navigate(dir), confirm: () => screens.confirm(),
     overview: toggleOverview, fullscreen: () => app.toggleSetting('fullscreen'), debug: () => app.toggleSetting('fps'),
-    device: d => { document.body.classList.toggle('pad', d === 'pad'); if (d === 'touch') document.body.classList.add('touch'); },
+    device: d => { document.body.classList.toggle('pad', d === 'pad'); if (d === 'pad') document.body.classList.add('pad-seen'); if (d === 'touch') document.body.classList.add('touch'); },
     gamepad: on => { if (on) document.body.classList.add('pad'); },
     scores: on => $('scoreboard').classList.toggle('expanded', on)
   } });
@@ -94,6 +100,7 @@ async function boot() {
   if ('serviceWorker' in navigator && !platform.isDesktop && (location.protocol === 'https:' || params.has('sw'))) {
     navigator.serviceWorker.register('sw.js').catch(e => console.warn('service worker', e));
   }
+  if (xbox) setupXbox();
   updateSoundButton();
   // The desktop shell remembers the window mode itself; mirror it in the settings.
   if (platform.isDesktop) settings.fullscreen = !!(await platform.isFullscreen().catch(() => settings.fullscreen));
@@ -110,6 +117,28 @@ async function boot() {
   }
   if (params.get('autostart') === 'solo') app.startSolo();
   exposeTestApi();
+}
+
+// ---- big screen / Xbox ---------------------------------------------------------------
+// TV mode follows the setting, or turns itself on in Edge on Xbox.
+const tvOn = () => (params.get('tv') === '0' ? false : params.get('tv') ? true : settings.tv ?? !!xbox);
+function applyTv() {
+  const on = tvOn();
+  document.body.classList.toggle('tv', on);
+  document.documentElement.style.setProperty('--tvz', on ? String(tvScale(innerHeight)) : '1');
+}
+function setupXbox() {
+  document.body.classList.add('xbox', 'xbox-' + xbox.split('-')[1]);
+  // Old Edge on Xbox: hand the controller to the page instead of the cursor.
+  try { navigator.gamepadInputEmulation = 'gamepad'; } catch { /* not supported */ }
+  // With "browser controls" B is the browser's Back: keep it inside the game.
+  guardBackButton(window, () => onBack());
+  // Full screen on the first press of A (a click while Edge drives the cursor).
+  const once = () => {
+    removeEventListener('pointerdown', once, true); removeEventListener('keydown', once, true);
+    if (settings.fullscreen && !document.fullscreenElement) platform.setFullscreen(true);
+  };
+  addEventListener('pointerdown', once, true); addEventListener('keydown', once, true);
 }
 
 // ---- menu attract scene ----------------------------------------------------------
@@ -405,6 +434,8 @@ const app = {
     session.start();
   },
   get edition() { return edition; },
+  get xbox() { return xbox; },
+  get tv() { return tvOn(); },
   openStore() { window.open(STORE_URL, '_blank', 'noopener'); },
   async openOnline() {
     if (edition === 'demo') { screens.demoModal('online', () => screens.focusMenu('#btnOnline')); return; }
@@ -466,6 +497,7 @@ const app = {
   setQuality(q) { settings.quality = q; save(); stage.applyQuality(q); },
   setVolume(key, v) { settings[key] = v; save(); audio.setVolumes({ master: settings.muted ? 0 : settings.volMaster / 100, music: settings.volMusic / 100, sfx: settings.volSfx / 100 }); updateSoundButton(); },
   toggleSetting(key) {
+    if (key === 'tv') { settings.tv = !tvOn(); save(); applyTv(); return; }
     settings[key] = !settings[key]; save();
     if (key === 'fullscreen') platform.setFullscreen(settings.fullscreen);
     if (key === 'dynamic') stage.setAdaptive(settings.dynamic);
@@ -532,7 +564,7 @@ function exposeTestApi() {
     getState: () => {
       const v = session?.view;
       return {
-        mode, edition, lang: getLang(), kind: session?.kind || null, isHost: !!session?.isHost, phase: v?.phase, remaining: v?.remaining, localId: v?.localId, myTarget: v?.myTarget,
+        mode, edition, xbox, tv: tvOn(), lang: getLang(), kind: session?.kind || null, isHost: !!session?.isHost, phase: v?.phase, remaining: v?.remaining, localId: v?.localId, myTarget: v?.myTarget,
         players: (v?.players || []).map(p => ({ id: p.id, hero: p.hero, name: playerName(p, v.localId), bot: p.bot, x: +p.x.toFixed(2), z: +p.z.toFixed(2), score: p.score, dead: p.dead > 0 })),
         lobby: lastLobby, sessionInfo, info: stage.info(), modal: document.getElementById('modal').open, screen: screens.current
       };
