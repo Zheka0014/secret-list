@@ -74,6 +74,7 @@
   <div id="respawnOverlay" hidden><strong id="respawnNum">5</strong></div>
 </div>
 <div id="toast" role="status"></div>
+<div id="xboxHint" role="note"><span class="xbox-badge">XBOX</span><span data-i18n-html="xbox.hint"></span></div>
 <div id="fps" hidden></div>
 
 <!-- ============ SCREENS ============ -->
@@ -97,7 +98,7 @@
       </div>
     </div>
     <div class="demo-box" id="demoBox" hidden>
-      <p><b data-i18n="demo.badge"></b> <span data-i18n="demo.banner"></span></p>
+      <p><b data-i18n="demo.badge"></b> <span id="demoBanner" data-i18n="demo.banner"></span></p>
       <button class="secondary" id="btnGetFull"><span data-i18n="demo.get"></span><span>↗</span></button>
     </div>
     <p class="note" data-i18n="menu.note"></p>
@@ -162,6 +163,7 @@
       <div class="setting"><span data-i18n="settings.quality"></span><div class="seg" id="qualitySeg"></div></div>
       <div class="setting"><span data-i18n="settings.dynamic"></span><button class="toggle" id="dynToggle"></button></div>
       <div class="setting" id="fullscreenRow"><span data-i18n="settings.fullscreen"></span><button class="toggle" id="fsToggle"></button></div>
+      <div class="setting"><span data-i18n="settings.tv"></span><button class="toggle" id="tvToggle"></button></div>
       <div class="setting"><span data-i18n="settings.shake"></span><button class="toggle" id="shakeToggle"></button></div>
       <div class="setting"><span data-i18n="settings.fps"></span><button class="toggle" id="fpsToggle"></button></div>
       <div class="setting" id="privacyRow"><span data-i18n="settings.privacy"></span><a class="ghost small" id="privacyLink" href="privacy.html" target="_blank" rel="noopener" data-i18n="settings.privacyOpen"></a></div>

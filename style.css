@@ -282,3 +282,25 @@ body.busy #screen-online button{pointer-events:none;opacity:.55}
 .demo-box b { color: var(--yellow); letter-spacing: .06em; margin-right: 3px; font-weight: 900; }
 .demo-box button { flex: none; padding: 8px 12px; font-size: 11px; gap: 8px; box-shadow: 0 4px var(--ink); }
 body.demo #screen-menu .note { display: none; }
+
+/* ---- Big screen: TV / Microsoft Edge on Xbox ----------------------------------------
+   The interface is zoomed so a 1080-line TV shows the 1280×720 layout; media queries
+   still see the real size, so the compact (≤800 px high) rules are repeated here. */
+body.tv #top, body.tv #hud, body.tv .screen, body.tv #modal, body.tv #toast, body.tv #xboxHint { zoom: var(--tvz, 1); }
+body.tv .card { max-height: calc((100vh - 90px) / var(--tvz, 1)); }
+body.tv .modal-inner { max-height: calc(88vh / var(--tvz, 1)); }
+body.tv .name-label { font-size: 16px; padding: 4px 10px; }
+body.tv .controls, body.tv .location { display: none; }
+body.tv .contract { left: 24px; top: 96px; width: 170px; } body.tv .portrait { height: 96px; } body.tv .target-name { font-size: 20px; }
+body.tv .scoreboard { right: 24px; top: 96px; width: 200px; } body.tv .score-row { padding: 3px; font-size: 12px; }
+body.tv .timer { top: 84px; } body.tv .bottom-left { bottom: 92px; } body.tv .mini canvas { width: 104px; height: 88px; }
+body.tv .feed { right: 25px; width: 205px; bottom: 150px; } body.tv h1.title { font-size: 48px; }
+body.tv .slots li { min-height: 36px; padding: 4px 9px; font-size: 13px; } body.tv .card { padding: 18px 22px; gap: 10px; } body.tv .card h2 { font-size: 28px; } body.tv .setting { padding: 5px 0; }
+body.tv .note, body.tv .demo-box p { font-size: 12px; }
+/* Edge on Xbox: how to hand the controller to the game (until the game hears it). */
+#xboxHint { display: none; position: absolute; left: 50%; top: 76px; transform: translateX(-50%); z-index: 12; align-items: center; gap: 12px; max-width: min(760px, 92vw); padding: 10px 16px; border: 3px solid var(--ink); border-radius: 14px; background: #fff2d4; color: var(--ink); box-shadow: 0 5px var(--ink); font-size: 14px; line-height: 1.35; font-weight: 700; pointer-events: none; }
+#xboxHint b { font-weight: 1000; }
+#xboxHint .xbox-badge { flex: none; background: #107c10; color: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 4px 8px; font-size: 11px; letter-spacing: .08em; font-weight: 1000; }
+body.xbox:not(.pad-seen) #xboxHint { display: flex; }
+body.xbox.state-play #xboxHint { top: auto; bottom: 108px; }
+body.xbox.state-boot #xboxHint { display: none; }
