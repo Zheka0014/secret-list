@@ -18,13 +18,15 @@ import { playfabConfig } from './online-config.js';
 import * as platform from './platform.js';
 import { createMatch, BTN } from './sim.js';
 import { createTracker, progressUnlocks } from './achievements.js';
+import { detectEdition, installedDisplayMode, demoStatus, useDemoMatch, DEMO_DURATION, STORE_URL } from './edition.js';
 
 const params = new URLSearchParams(location.search);
 const settings = loadSettings();
 const save = () => saveSettings(settings);
 const audio = createAudio();
 let stage, hud, labels, input, screens, steam = { available: false };
-let session = null, sessionInfo = {}, mode = 'boot', menuView = null, lastLobby = null, testMove = null;
+let session = null, sessionInfo = {}, mode = 'boot', menuView = null, lastLobby = null, testMove = null, edition = 'full';
+const storage = (() => { try { return window.localStorage; } catch { return null; } })();
 const achievements = createTracker();
 // Stat updates go to Steam; progress achievements unlock from the new totals.
 async function commitStats(ops) {
@@ -83,6 +85,11 @@ async function boot() {
   menuView = makeMenuView();
   $('btnQuit').hidden = !platform.isDesktop;
   $('privacyRow').hidden = platform.isDesktop;
+  // Browser tab = free demo; the Microsoft Store app and the Steam build are the full game.
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  edition = detectEdition({ desktop: platform.isDesktop, referrer: document.referrer, ua: navigator.userAgent, installed: installedDisplayMode(window), storage, override: local ? (params.get('edition') || 'full') : null });
+  document.body.classList.toggle('demo', edition === 'demo');
+  $('demoBox').hidden = edition !== 'demo';
   // Offline play for the published web / Microsoft Store version.
   if ('serviceWorker' in navigator && !platform.isDesktop && (location.protocol === 'https:' || params.has('sw'))) {
     navigator.serviceWorker.register('sw.js').catch(e => console.warn('service worker', e));
@@ -317,7 +324,7 @@ function onMatchEnd({ results }) {
     const online = session.kind !== 'solo';
     screens.resultsModal({
       results, view, isHost: session.isHost, online,
-      onAgain: () => { if (session?.isHost) session.start(); },
+      onAgain: () => { if (edition === 'demo' && session?.kind === 'solo') app.startSolo(); else if (session?.isHost) session.start(); },
       onLobby: () => { if (session?.isHost) { session.backToLobby(); toLobbyScreen(); } },
       onMenu: () => app.leaveSession()
     });
@@ -382,12 +389,25 @@ const app = {
   setName(n) { settings.name = n; save(); },
   setMatchSettings(s) { if (!session?.isHost) return; if (s.duration) settings.duration = s.duration; if (s.bots != null) settings.bots = s.bots; save(); session.setSettings(s); },
   startSolo() {
+    let duration = MATCH_DURATIONS.includes(settings.duration) ? settings.duration : 180;
+    if (edition === 'demo') {
+      if (!demoStatus(storage).left) {
+        if (mode !== 'menu') { endSession(); toMenu(); }
+        screens.demoModal('limit', () => screens.focusMenu());
+        return;
+      }
+      useDemoMatch(storage);
+      duration = DEMO_DURATION;
+    }
     endSession();
-    session = new HostSession({ kind: 'solo', name: '@you', hero: settings.hero, settings: { duration: MATCH_DURATIONS.includes(settings.duration) ? settings.duration : 180, bots: true } });
+    session = new HostSession({ kind: 'solo', name: '@you', hero: settings.hero, settings: { duration, bots: true } });
     bindSession(session);
     session.start();
   },
+  get edition() { return edition; },
+  openStore() { window.open(STORE_URL, '_blank', 'noopener'); },
   async openOnline() {
+    if (edition === 'demo') { screens.demoModal('online', () => screens.focusMenu('#btnOnline')); return; }
     const { webRelay, playfab } = await webOnline();
     screens.renderOnline({ steam, desktop: platform.isDesktop, webRelay, playfab });
     screens.show('online');
@@ -512,7 +532,7 @@ function exposeTestApi() {
     getState: () => {
       const v = session?.view;
       return {
-        mode, lang: getLang(), kind: session?.kind || null, isHost: !!session?.isHost, phase: v?.phase, remaining: v?.remaining, localId: v?.localId, myTarget: v?.myTarget,
+        mode, edition, lang: getLang(), kind: session?.kind || null, isHost: !!session?.isHost, phase: v?.phase, remaining: v?.remaining, localId: v?.localId, myTarget: v?.myTarget,
         players: (v?.players || []).map(p => ({ id: p.id, hero: p.hero, name: playerName(p, v.localId), bot: p.bot, x: +p.x.toFixed(2), z: +p.z.toFixed(2), score: p.score, dead: p.dead > 0 })),
         lobby: lastLobby, sessionInfo, info: stage.info(), modal: document.getElementById('modal').open, screen: screens.current
       };
