@@ -119,9 +119,10 @@ export function createScreens(app) {
     seg('qualitySeg', ['low', 'medium', 'high', 'ultra'].map(id => ({ id, name: t('settings.q.' + id) })), s.quality, id => app.setQuality(id));
     $('volMaster').value = s.volMaster; $('volMusic').value = s.volMusic; $('volSfx').value = s.volSfx;
     for (const [id, key] of [['dynToggle', 'dynamic'], ['fsToggle', 'fullscreen'], ['shakeToggle', 'shake'], ['fpsToggle', 'fps']]) $(id).setAttribute('aria-pressed', String(!!s[key]));
+    $('tvToggle').setAttribute('aria-pressed', String(!!app.tv));
   }
   for (const [id, key] of [['volMaster', 'volMaster'], ['volMusic', 'volMusic'], ['volSfx', 'volSfx']]) $(id).addEventListener('input', e => app.setVolume(key, +e.target.value));
-  for (const [id, key] of [['dynToggle', 'dynamic'], ['fsToggle', 'fullscreen'], ['shakeToggle', 'shake'], ['fpsToggle', 'fps']]) $(id).addEventListener('click', () => { app.toggleSetting(key); app.sound('ui'); renderSettings(); });
+  for (const [id, key] of [['dynToggle', 'dynamic'], ['fsToggle', 'fullscreen'], ['shakeToggle', 'shake'], ['fpsToggle', 'fps'], ['tvToggle', 'tv']]) $(id).addEventListener('click', () => { app.toggleSetting(key); app.sound('ui'); renderSettings(); });
 
   // ---- modal -------------------------------------------------------------------------
   function openModal({ kicker = '', title = '', body = '', note = '', buttons = [], onClose = null, className = '' }) {
@@ -153,7 +154,7 @@ export function createScreens(app) {
   modal.addEventListener('cancel', e => { e.preventDefault(); closeModal(false); });
 
   function rulesModal(onClose) {
-    openModal({ kicker: t('rules.kicker'), title: t('rules.title'), body: t('rules.body') + t('rules.keys'), buttons: [{ text: t('rules.close'), icon: '✓', onClick: onClose }], onClose });
+    openModal({ kicker: t('rules.kicker'), title: t('rules.title'), body: t('rules.body') + (app.xbox ? t('xbox.rules') : '') + t('rules.keys'), buttons: [{ text: t('rules.close'), icon: '✓', onClick: onClose }], onClose });
   }
   function demoModal(kind, onClose) {
     const online = kind === 'online';
@@ -234,7 +235,11 @@ export function createScreens(app) {
     focusMenu(sel = '#btnSolo') { if (current === 'menu') focusFirst($('screen-menu'), sel); },
     navigate(dir) {
       const root = modal.open ? modal : current === 'none' ? null : $('screen-' + current);
-      if (root) { if (navigate(root, dir) !== false) app.sound('move'); }
+      if (!root) return;
+      const before = document.activeElement, moved = navigate(root, dir);
+      if (!modal.open ? moved !== false : moved === true || document.activeElement !== before) { app.sound('move'); return; }
+      // Nothing more to focus that way: a long window (rules) scrolls instead.
+      if (modal.open && (dir === 'up' || dir === 'down')) modal.querySelector('.modal-inner')?.scrollBy({ top: dir === 'down' ? 180 : -180 });
     },
     confirm() {
       const a = document.activeElement;
