@@ -275,3 +275,10 @@ dialog::backdrop { background: #21183366; backdrop-filter: blur(3px); }
 /* online: no double clicks while PlayFab/WebRTC connect */
 body.busy #screen-online button{pointer-events:none;opacity:.55}
 #onlineBusy{color:var(--mint,#78f8db);font-weight:900}
+
+/* Free web demo: banner in the menu */
+.demo-box { margin-top: 12px; padding: 8px 8px 8px 12px; border-radius: 14px; background: #ffcf3d14; border: 1px solid #ffcf3d59; display: flex; align-items: center; gap: 12px; }
+.demo-box p { flex: 1; margin: 0; font-size: 11px; line-height: 1.35; color: var(--cream); font-weight: 700; }
+.demo-box b { color: var(--yellow); letter-spacing: .06em; margin-right: 3px; font-weight: 900; }
+.demo-box button { flex: none; padding: 8px 12px; font-size: 11px; gap: 8px; box-shadow: 0 4px var(--ink); }
+body.demo #screen-menu .note { display: none; }

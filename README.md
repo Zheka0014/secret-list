@@ -2,7 +2,8 @@
 
 A cartoon party game for 1–8 players: everyone hunts a secret target, and someone hunts you.
 
-- Play in the browser: https://zheka0014.github.io/secret-list/
+- Free demo in the browser (one match against bots per day): https://zheka0014.github.io/secret-list/
+- Full game: Microsoft Store — https://apps.microsoft.com/detail/9PK8V9FPZCB5
 - Privacy policy: https://zheka0014.github.io/secret-list/privacy.html
 - Contact: lootroomgame@gmail.com
 
@@ -10,7 +11,8 @@ A cartoon party game for 1–8 players: everyone hunts a secret target, and some
 
 Мультяшная party-игра для 1–8 игроков: у каждого есть тайная цель, а у кого-то — твоё имя.
 
-- Играть в браузере: https://zheka0014.github.io/secret-list/
+- Бесплатная демо-версия в браузере (один матч с ботами в день): https://zheka0014.github.io/secret-list/
+- Полная версия: Microsoft Store — https://apps.microsoft.com/detail/9PK8V9FPZCB5
 - Политика конфиденциальности: https://zheka0014.github.io/secret-list/privacy.html
 
 Third-party: three.js (MIT, `vendor/THREE-LICENSE.txt`), Nunito font (SIL OFL 1.1, `assets/fonts/OFL.txt`).
