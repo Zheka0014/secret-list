@@ -155,6 +155,15 @@ export function createScreens(app) {
   function rulesModal(onClose) {
     openModal({ kicker: t('rules.kicker'), title: t('rules.title'), body: t('rules.body') + t('rules.keys'), buttons: [{ text: t('rules.close'), icon: '✓', onClick: onClose }], onClose });
   }
+  function demoModal(kind, onClose) {
+    const online = kind === 'online';
+    openModal({
+      kicker: t('demo.badge'), title: t(online ? 'demo.onlineTitle' : 'demo.limitTitle'),
+      body: `<p>${t(online ? 'demo.onlineBody' : 'demo.limitBody')}</p>`, className: 'demo-modal',
+      buttons: [{ text: t('demo.store'), icon: '↗', onClick: () => { app.openStore(); onClose?.(); } }, { text: t('demo.later'), style: 'ghost', onClick: onClose }],
+      onClose
+    });
+  }
   function messageModal(text, onClose, title = t('msg.error')) {
     openModal({ title: `<em>${title}</em>`, body: `<p>${escapeHtml(text)}</p>`, buttons: [{ text: t('msg.ok'), onClick: onClose }], onClose });
   }
@@ -192,6 +201,7 @@ export function createScreens(app) {
   $('btnSettings').onclick = () => { app.sound('ui'); openSettings('menu'); };
   $('btnRules').onclick = () => { app.sound('ui'); rulesModal(() => focusFirst($('screen-menu'), '#btnRules')); };
   $('btnQuit').onclick = () => { app.sound('ui'); confirmModal(t('msg.quit'), t('msg.quitYes'), () => app.quit(), () => focusFirst($('screen-menu'), '#btnQuit')); };
+  $('btnGetFull').onclick = () => { app.sound('ui'); app.openStore(); };
   $('btnOnlineBack').onclick = () => { app.sound('back'); show('menu'); };
   $('btnSteamHost').onclick = () => { app.sound('ui'); app.hostSteam(); };
   $('btnLanHost').onclick = () => { app.sound('ui'); app.hostLan(); };
@@ -220,7 +230,8 @@ export function createScreens(app) {
     show, get current() { return current; },
     renderMenuHeroes, renderOnline, renderLobby, renderSettings, openSettings, closeSettings,
     openModal, closeModal, get modalOpen() { return modal.open; },
-    rulesModal, messageModal, confirmModal, resultsModal, pauseModal,
+    rulesModal, messageModal, confirmModal, resultsModal, pauseModal, demoModal,
+    focusMenu(sel = '#btnSolo') { if (current === 'menu') focusFirst($('screen-menu'), sel); },
     navigate(dir) {
       const root = modal.open ? modal : current === 'none' ? null : $('screen-' + current);
       if (root) { if (navigate(root, dir) !== false) app.sound('move'); }
