@@ -1,5 +1,22 @@
-// Russian and English strings. Elements with data-i18n / data-i18n-html /
-// data-i18n-attr="attr:key;attr:key" are filled by apply().
+// Game texts. Russian and English live here; the other languages are in
+// locales/<id>.js (missing keys fall back to English). Elements with data-i18n /
+// data-i18n-html / data-i18n-attr="attr:key;attr:key" are filled by apply().
+import uk from './locales/uk.js';
+import de from './locales/de.js';
+import fr from './locales/fr.js';
+import es from './locales/es.js';
+import ptBR from './locales/pt-BR.js';
+import it from './locales/it.js';
+import pl from './locales/pl.js';
+import cs from './locales/cs.js';
+import tr from './locales/tr.js';
+import zhCN from './locales/zh-CN.js';
+import zhTW from './locales/zh-TW.js';
+import ja from './locales/ja.js';
+import ko from './locales/ko.js';
+import th from './locales/th.js';
+import vi from './locales/vi.js';
+import id from './locales/id.js';
 const RU = {
   'brand.top': 'ТАЙНЫЙ', 'brand.bottom': 'СПИСОК',
   'phase.menu': 'ГОТОВ К ХАОСУ', 'phase.lobby': 'ЛОББИ', 'phase.countdown': 'ПРИГОТОВЬСЯ', 'phase.play': 'МАТЧ ИДЁТ', 'phase.ended': 'МАТЧ ЗАВЕРШЁН',
@@ -55,7 +72,7 @@ const RU = {
   'settings.tv': 'Крупный интерфейс (ТВ)',
   'demo.bannerXbox': 'Один матч с ботами в день. Полная версия с игрой по сети — в Microsoft Store для ПК с Windows.',
   'xbox.hint': 'Чтобы играть геймпадом, <b>зажми кнопку ☰</b> и выбери игровое управление <b>(Use game controls)</b>. Весь экран — <b>зажми ⧉</b>.',
-  'xbox.rules': '<div class="keys"><h3>Xbox · Microsoft Edge</h3><p>Зажми <b>☰</b> и выбери игровое управление (Use game controls) — тогда геймпад управляет игрой, а не курсором. Зажми <b>☰</b> ещё раз, чтобы вернуть курсор. Зажми <b>⧉</b> — весь экран. Ⓑ — назад.</p></div>',
+  'xbox.rules': '<div class="keys"><h3>Xbox · Microsoft Edge</h3><p>Зажми <b>☰</b> и выбери игровое управление <b>(Use game controls)</b> — тогда геймпад управляет игрой, а не курсором. Зажми <b>☰</b> ещё раз, чтобы вернуть курсор. Зажми <b>⧉</b> — весь экран. Ⓑ — назад.</p></div>',
   'settings.back': 'ГОТОВО', 'settings.on': 'Вкл', 'settings.off': 'Выкл', 'settings.name': 'Имя в сетевой игре',
   'pause.kicker': 'ВЫДОХНИ. ТВОЯ ЦЕЛЬ ПОДОЖДЁТ.', 'pause.title': 'ИГРА <em>НА ПАУЗЕ.</em>', 'pause.body': 'Таймер и соперники тоже отдыхают.',
   'pause.titleOnline': 'МЕНЮ <em>МАТЧА.</em>', 'pause.bodyOnline': 'Сетевой матч продолжается, пока открыто меню.',
@@ -164,12 +181,22 @@ const EN = {
   'you': 'You', 'player': 'Player'
 };
 
-const TABLES = { ru: RU, en: EN };
-let lang = 'ru';
+const TABLES = { en: EN, ru: RU, uk, de, fr, es, 'pt-BR': ptBR, it, pl, cs, tr, 'zh-CN': zhCN, 'zh-TW': zhTW, ja, ko, th, vi, id };
+let lang = 'en';
 
-export const languages = [{ id: 'ru', name: 'Русский' }, { id: 'en', name: 'English' }];
+// Shown in the settings in each language's own name.
+export const languages = [
+  { id: 'en', name: 'English' }, { id: 'ru', name: 'Русский' }, { id: 'uk', name: 'Українська' },
+  { id: 'de', name: 'Deutsch' }, { id: 'fr', name: 'Français' }, { id: 'es', name: 'Español' },
+  { id: 'pt-BR', name: 'Português (BR)' }, { id: 'it', name: 'Italiano' }, { id: 'pl', name: 'Polski' },
+  { id: 'cs', name: 'Čeština' }, { id: 'tr', name: 'Türkçe' }, { id: 'id', name: 'Indonesia' },
+  { id: 'vi', name: 'Tiếng Việt' }, { id: 'th', name: 'ไทย' }, { id: 'zh-CN', name: '简体中文' },
+  { id: 'zh-TW', name: '繁體中文' }, { id: 'ja', name: '日本語' }, { id: 'ko', name: '한국어' }
+];
+export const LANGUAGE_IDS = languages.map(l => l.id);
+export const tableFor = id => TABLES[id] || null;
 export const getLang = () => lang;
-export function setLang(l) { lang = TABLES[l] ? l : 'en'; document.documentElement.lang = lang; apply(); }
+export function setLang(l) { lang = TABLES[l] ? l : 'en'; if (typeof document !== 'undefined') { document.documentElement.lang = lang; apply(); } }
 
 export function t(key, vars) {
   let s = TABLES[lang][key] ?? EN[key] ?? key;
@@ -185,11 +212,24 @@ export function apply(root = document) {
   });
 }
 
-// Steam language names → ours; browser locale as a fallback.
-export function detectLanguage(steamLang) {
-  if (steamLang) return /russian|ukrainian|belarus/i.test(steamLang) ? 'ru' : 'en';
-  const nav = (navigator.languages || [navigator.language || 'en']).join(',').toLowerCase();
-  return /(^|,)(ru|uk|be|kk)/.test(nav) ? 'ru' : 'en';
+// Steam language names → ours; then the browser / system languages in order of
+// preference; English when nothing matches.
+const STEAM = { english: 'en', russian: 'ru', ukrainian: 'uk', belarusian: 'ru', german: 'de', french: 'fr', spanish: 'es', latam: 'es', brazilian: 'pt-BR', portuguese: 'pt-BR', italian: 'it', polish: 'pl', czech: 'cs', turkish: 'tr', schinese: 'zh-CN', tchinese: 'zh-TW', japanese: 'ja', koreana: 'ko', korean: 'ko', thai: 'th', vietnamese: 'vi', indonesian: 'id' };
+export function matchLanguage(tag) {
+  const t = String(tag || '').toLowerCase().replace('_', '-');
+  if (!t) return null;
+  if (/^zh-(hant|tw|hk|mo)/.test(t)) return 'zh-TW';
+  if (t.startsWith('zh')) return 'zh-CN';
+  if (t.startsWith('pt')) return 'pt-BR';
+  const base = t.split('-')[0];
+  if (base === 'be' || base === 'kk') return 'ru';
+  if (base === 'in') return 'id';
+  return LANGUAGE_IDS.find(id => id.toLowerCase() === base) || null;
+}
+export function detectLanguage(steamLang, navLangs = typeof navigator !== 'undefined' ? (navigator.languages?.length ? navigator.languages : [navigator.language]) : []) {
+  if (steamLang && STEAM[String(steamLang).toLowerCase()]) return STEAM[String(steamLang).toLowerCase()];
+  for (const l of navLangs) { const m = matchLanguage(l); if (m) return m; }
+  return 'en';
 }
 
 export const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
